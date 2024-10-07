@@ -17,6 +17,9 @@ instrument_url = "https://margincalculator.angelbroking.com/OpenAPI_File/files/O
 response = urllib.request.urlopen(instrument_url)
 instrument_list = json.loads(response.read())
 
+today = dt.date.today()
+
+# GET Nearest Expiry
 def get_nearest_exp():
     today = dt.date.today()
     # Calculate the number of days until the next Wednesday
@@ -26,41 +29,86 @@ def get_nearest_exp():
     next_wednesday = today + dt.timedelta(days=days_until_next_wednesday)
     nearest_exp = next_wednesday.strftime("%d%b%y")
     return nearest_exp
-
 expiry=get_nearest_exp()
 
-def token_lookup(ticker, instrument_list, exchange="NFO"):
+# Get Strike Price to select options
+def get_strike_price():
+    temp = pd.read_csv('D:\\key\\mr_long_data\\BN_data\\BN_5min_candle_'+str(today)+'.csv')
+    temp.columns=['date', 'open', 'high', 'low', 'close']
+    price = int(temp.iloc[-2]["close"])
+    remainder = price % 100
+    if remainder <= 50:
+        strike = price - remainder
+    else:
+        strike = price + (100 - remainder)
+    return strike
+    
+strike_price = get_strike_price()
+#strike_price = 51300
+     
+strike_symbol_CE = ('BANKNIFTY'+expiry+str(strike_price)+'CE').upper()
+strike_symbol_PE = ('BANKNIFTY'+expiry+str(strike_price)+'PE').upper()
+print(strike_symbol_CE)
+print(strike_symbol_PE)
+
+     
+def token_lookup_CE(strike_symbol_CE, instrument_list, exchange="NFO"):
     for instrument in instrument_list:
-        if instrument["name"] == ticker and instrument["exch_seg"] == exchange and instrument["symbol"].split("-")[-1] == "EQ":
+        if instrument["symbol"] == strike_symbol_CE :
          return instrument["token"]
      
-strike_symbol = 'BANKNIFTY'+expiry+'49300CE'
-
      
-def token_lookup(strike, instrument_list, exchange="NFO"):
+def token_lookup_PE(strike_symbol_PE, instrument_list, exchange="NFO"):
     for instrument in instrument_list:
-        if instrument["symbol"] == strike_symbol and instrument["exch_seg"] == exchange:
+        if instrument["symbol"] == strike_symbol_PE :
          return instrument["token"]
-token = 44053
+     
+token_CE = token_lookup_CE(strike_symbol_CE, instrument_list)
+token_PE = token_lookup_PE(strike_symbol_PE, instrument_list)
+print(token_CE)
+print(token_PE)
 
-def hist_data(token, duration, interval, instrument_list, exchange="NSE"):
+if today.weekday() == 0:
+    # If Monday, subtract 3 days to get the previous Friday
+    yesterday = today - dt.timedelta(days=3)
+else:
+    # If not Monday, subtract 1 day to get the previous day
+    yesterday = today - dt.timedelta(days=1)
 
-        params = {
-            "exchange": exchange,
-            "symboltoken": token,
-            "interval": interval,
-            "fromdate": (dt.date.today() - dt.timedelta(duration)).strftime("%Y-%m-%d %H:%M"),
-            "todate": dt.date.today().strftime("%Y-%m-%d %H:%M")
-            }
-                                               
-        hist_data = obj.getCandleData(params)
-        df_hist_data = pd.DataFrame(hist_data["data"],
-                                    columns=["date", "open", "high", "low", "close", "volume"])
-        df_hist_data.set_index("date",inplace=True)
-        df_hist_data.index = pd.to_datetime(df_hist_data.index)
-        df_hist_data.index = df_hist_data.index.tz_localize(None)
-        #hist_tickers_data[ticker] = df_hist_data
-        return df_hist_data
+st_date = str(yesterday) + " 14:30"
+end_date = str(today) + " 09:30"
 
-opt_hist_data = hist_data(token, 1, "ONE_MINUTE", instrument_list)
 
+
+def hist_data_CE(token_CE,interval,st_date,end_date,instrument_list,exchange="NFO"):
+    params = {
+             "exchange": exchange,
+             "symboltoken": token_CE,
+             "interval": interval,
+             "fromdate": st_date,
+             "todate": end_date,
+             }
+    hist_data = obj.getCandleData(params)
+    df_data = pd.DataFrame(hist_data["data"],
+                           columns = ["date","open","high","low","close","volume"])
+    df_data.set_index("date",inplace=True)
+    df_data.to_csv(r'D:\\key\\mr_long_data\\option_data\\CE_5min_candle_'+str(today)+'.csv')
+    
+
+def hist_data_PE(token_PE,interval,st_date,end_date,instrument_list,exchange="NFO"):
+    params = {
+             "exchange": exchange,
+             "symboltoken": token_PE,
+             "interval": interval,
+             "fromdate": st_date,
+             "todate": end_date,
+             }
+    hist_data = obj.getCandleData(params)
+    df_data = pd.DataFrame(hist_data["data"],
+                           columns = ["date","open","high","low","close","volume"])
+    df_data.set_index("date",inplace=True)
+    df_data.to_csv(r'D:\\key\\mr_long_data\\option_data\\PE_5min_candle_'+str(today)+'.csv')
+
+
+hist_data_CE(token_CE,"FIVE_MINUTE",st_date, end_date, instrument_list)
+hist_data_PE(token_PE,"FIVE_MINUTE",st_date, end_date, instrument_list)
