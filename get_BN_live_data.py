@@ -28,7 +28,7 @@ sws = SmartWebSocketV2(data["data"]["jwtToken"], key_secret[0], key_secret[2], f
 correlation_id = "BN_live_data"
 action = 1
 mode = 1
-token_list = [{"exchangeType": 2, "tokens": 26009}]   #48200 CE
+token_list = [{"exchangeType": 1, "tokens": [key_secret[5]]}]   #48200 CE
 global LIVE_FEED_JSON
 
 def on_open(wsapp): 
@@ -37,7 +37,7 @@ def on_open(wsapp):
 
 def on_data(wsapp, message):
     try:
-        with open('mr_long_data\\BN_data\\BN_live_DATA_'+today+'.csv', 'a', newline='') as csvfile:
+        with open('mr_long_data\\BN_data\\BN_live_data_'+today+'.csv', 'a', newline='') as csvfile:
               writer = csv.writer(csvfile)
               writer.writerow([datetime.fromtimestamp(message['exchange_timestamp']/1000)
                                .isoformat(), message["last_traded_price"]/100])
