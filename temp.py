@@ -22,10 +22,20 @@ key_secret = open("key.txt","r").read().split()
 obj = SmartConnect(api_key=key_secret[0])
 data = obj.generateSession(key_secret[2], key_secret[3], TOTP(key_secret[4]).now())
 
-instrument_url = "https://margincalculator.angelbroking.com/OpenAPI_File/files/OpenAPIScripMaster.json"
-print("Instrument list fetched")
-response = urllib.request.urlopen(instrument_url)
-instrument_list = json.loads(response.read())
+instrument_file = "instrument_list.json"
+
+if os.path.exists(instrument_file):
+    with open(instrument_file, "r") as f:
+        instrument_list = json.load(f)
+    print("Instrument list loaded from cache")
+else:
+    instrument_url = "https://margincalculator.angelbroking.com/OpenAPI_File/files/OpenAPIScripMaster.json"
+    print("Fetching instrument list")
+    response = urllib.request.urlopen(instrument_url)
+    instrument_list = json.loads(response.read())
+    with open(instrument_file, "w") as f:
+        json.dump(instrument_list, f)
+    print("Instrument list fetched and cached")
 
 today = dt.date.today()
 
@@ -89,13 +99,48 @@ def fetch_1_min_data_CE(token_CE, st_date, end_date, high, low):
     close_price = candle_df_ce_1["close"].iloc[-1]
     if close_price > high:
         print("High breached")
-        orderPlaced = True
+        place_order(token_CE, high, low, st_date, end_date)
     print(f"Close price of 1-minute candle for CE: {close_price}")
 
 def fetch_1_min_data_PE(token_PE, st_date, end_date):
     candle_df_pe_1 = hist_data_CE(token_PE, "ONE_MINUTE", st_date, end_date, instrument_list)
     close_price = candle_df_pe_1["close"].iloc[-1]
     print(f"Close price of 1-minute candle for PE: {close_price}")
+
+import functools
+
+def place_order(token, entry, stoploss, st_date, end_date):
+    global orderPlaced
+    trailStopLoss = entry + (entry - stoploss)
+    print("Trail stop loss: ", trailStopLoss)
+    bookProfit = entry + 2 * (entry - stoploss)
+    print("Book profit: ", bookProfit)
+    if not orderPlaced:
+        print("Order placed")
+        orderPlaced = True
+
+        def check_order(token, entry, stoploss, st_date, end_date, trailStopLoss, bookProfit):
+            global orderPlaced
+            candle_df = hist_data_CE(token, "ONE_MINUTE", st_date, end_date, instrument_list)
+            current_price = candle_df["close"].iloc[-1]
+            print(f"Current price: {current_price}")
+            if current_price > bookProfit:
+                print("Booking profit")
+                orderPlaced = False
+                schedule.clear('order_check')  # Clear the scheduled job
+            elif current_price >= trailStopLoss:
+                print("Trailing stop loss to entry value")
+                stoploss = entry
+
+        # Schedule the check_order function to run every 1 minute
+        schedule.every(10).seconds.do(
+              functools.partial(check_order, token, entry, stoploss, st_date, end_date, trailStopLoss, bookProfit)
+         ).tag('order_check')
+        print("Scheduled order check")
+    else:
+        print("Order already placed")
+
+
 
 #strike_price = 51300
 
@@ -123,7 +168,7 @@ def execute_strategy():
     else:
         yesterday = today - dt.timedelta(days=1)
 
-    st_date = str(today) + " 13:30"
+    st_date = str(today) + " 09:30"
     end_date = str(today) + " 22:30"
 
     candle_df = hist_data_CE(token_CE, "FIVE_MINUTE", st_date, end_date, instrument_list)
@@ -137,11 +182,14 @@ def execute_strategy():
     pe_rsi = 60
 
     if ce_bb == "buy" and ce_rsi > 50 and not orderPlaced:
-        print(strike_symbol_CE + " is a Buy")
-        for i in range(1, 5):
-            schedule.every().minute.at(f":{5 * i:02d}").do(
-                lambda: fetch_1_min_data_CE(token_CE,st_date,end_date,candle_df["high"].iloc[-1], candle_df["low"].iloc[-1]))
-            print(orderPlaced)
+       print(strike_symbol_CE + " is a Buy")
+       if not orderPlaced:
+           for i in range(1, 5):
+               if not orderPlaced:
+                   schedule.every().minute.at(f":{5 * i:02d}").do(
+                       lambda: fetch_1_min_data_CE(token_CE, st_date, end_date, candle_df["high"].iloc[-2],
+                                                   candle_df["low"].iloc[-2])
+                   )
     elif pe_bb == "buy" and pe_rsi > 50 and not orderPlaced:
         print(strike_symbol_PE + " is a Buy")
         for i in range(1, 5):
@@ -153,7 +201,7 @@ def execute_strategy():
 
 
 # Schedule the function to run every 5 minutes
-schedule.every(1).minutes.at(":00").do(execute_strategy)
+schedule.every(5).minutes.at(":00").do(lambda: execute_strategy() if not orderPlaced else None)
 
 while True:
     schedule.run_pending()
