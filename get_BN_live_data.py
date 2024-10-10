@@ -12,9 +12,9 @@ global token
 today = str(date.today())
 
 TOTP("").now()
-key_path = r"D:\key"
+key_path = r"C:\Users\HP\Desktop\mr_long_strategy"
 os.chdir(key_path)
-key_secret = open("shbm_key.txt","r").read().split()
+key_secret = open("key.txt","r").read().split()
 obj = SmartConnect(api_key=key_secret[0])
 data = obj.generateSession(key_secret[2], key_secret[3], TOTP(key_secret[4]).now())
 feed_token = obj.getfeedToken()
@@ -25,10 +25,10 @@ instrument_list = json.loads(response.read())
 
 sws = SmartWebSocketV2(data["data"]["jwtToken"], key_secret[0], key_secret[2], feed_token, 3)
 
-correlation_id = "BN_live_data"
+correlation_id = "BN_live_data_Vivek"
 action = 1
 mode = 1
-token_list = [{"exchangeType": 1, "tokens": [key_secret[5]]}]   #48200 CE
+token_list = [{"exchangeType": 5, "tokens": [key_secret[5]]}]   #48200 CE
 global LIVE_FEED_JSON
 
 def on_open(wsapp): 

@@ -7,9 +7,9 @@ from SmartApi import SmartConnect
 from pyotp import TOTP
 
 TOTP("").now()
-key_path = r"D:\key"
+key_path = r"C:\Users\HP\Desktop\mr_long_strategy"
 os.chdir(key_path)
-key_secret = open("shbm_key.txt","r").read().split()
+key_secret = open("key.txt","r").read().split()
 obj = SmartConnect(api_key=key_secret[0])
 data = obj.generateSession(key_secret[2], key_secret[3], TOTP(key_secret[4]).now())
 
@@ -33,7 +33,7 @@ expiry=get_nearest_exp()
 
 # Get Strike Price to select options
 def get_strike_price():
-    temp = pd.read_csv('D:\\key\\mr_long_data\\BN_data\\BN_5min_candle_'+str(today)+'.csv')
+    temp = pd.read_csv('C:\\Users\\HP\\Desktop\\mr_long_strategy\\mr_long_data\\BN_data\\BN_5min_candle_'+str(today)+'.csv')
     temp.columns=['date', 'open', 'high', 'low', 'close']
     price = int(temp.iloc[-2]["close"])
     remainder = price % 100
