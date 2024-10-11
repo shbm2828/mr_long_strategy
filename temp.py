@@ -103,7 +103,7 @@ def hist_data_CE(token_CE,interval,st_date,end_date,instrument_list,exchange="NF
         
   
 candle_df = hist_data_CE(token_CE,"FIVE_MINUTE",st_date, end_date, instrument_list)
-candle_df = hist_data_CE(token_CE,"ONE_MINUTE",st_date, end_date, instrument_list)
+
 
 
 
