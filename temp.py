@@ -9,6 +9,8 @@ from SmartApi import SmartConnect
 from pyotp import TOTP
 import schedule
 import time
+from datetime import datetime
+import  functools
 
 #from get_option_hist_data import strike_symbol_CE
 
@@ -95,6 +97,8 @@ def hist_data_CE(token_CE,interval,st_date,end_date,instrument_list,exchange="MC
     return df_data
 
 def fetch_1_min_data_CE(token_CE, st_date, end_date, high, low):
+    print(
+        f"Params - token_CE: {token_CE}, st_date: {st_date}, end_date: {end_date}, high: {high}, low: {low}, current_minute: {datetime.now().minute}")
     candle_df_ce_1 = hist_data_CE(token_CE, "ONE_MINUTE", st_date, end_date, instrument_list)
     close_price = candle_df_ce_1["close"].iloc[-1]
     if close_price > high:
@@ -107,7 +111,6 @@ def fetch_1_min_data_PE(token_PE, st_date, end_date):
     close_price = candle_df_pe_1["close"].iloc[-1]
     print(f"Close price of 1-minute candle for PE: {close_price}")
 
-import functools
 
 def place_order(token, entry, stoploss, st_date, end_date):
     global orderPlaced
@@ -115,30 +118,39 @@ def place_order(token, entry, stoploss, st_date, end_date):
     print("Trail stop loss: ", trailStopLoss)
     bookProfit = entry + 2 * (entry - stoploss)
     print("Book profit: ", bookProfit)
+    orderPrice = entry
     if not orderPlaced:
         print("Order placed")
         orderPlaced = True
 
-        def check_order(token, entry, stoploss, st_date, end_date, trailStopLoss, bookProfit):
+        stoploss_dict = {"value": stoploss}  # Use a dictionary to store stoploss
+
+        def check_order(token, entry, stoploss_dict, st_date, end_date, trailStopLoss, bookProfit):
             global orderPlaced
             candle_df = hist_data_CE(token, "ONE_MINUTE", st_date, end_date, instrument_list)
             current_price = candle_df["close"].iloc[-1]
-            print(f"Current price: {current_price}")
-            if current_price > bookProfit:
-                print("Booking profit")
+            print(f"Current price: {current_price}, token: {token}, entry: {entry}, stoploss: {stoploss_dict['value']}, st_date: {st_date}, end_date: {end_date}, trailStopLoss: {trailStopLoss}, bookProfit: {bookProfit}")
+            if current_price <= stoploss_dict["value"]:
+                print("Stoploss hit")
+                orderPlaced = False
+                print("Stoploss hit", (current_price - orderPrice) * 100, "rupees")
+                schedule.clear('order_check')
+            elif current_price > bookProfit:
+                print("Booking profit", (current_price - orderPrice) * 100, "rupees")
                 orderPlaced = False
                 schedule.clear('order_check')  # Clear the scheduled job
             elif current_price >= trailStopLoss:
                 print("Trailing stop loss to entry value")
-                stoploss = entry
+                stoploss_dict["value"] = entry  # Update the stoploss value
 
         # Schedule the check_order function to run every 1 minute
-        schedule.every(10).seconds.do(
-              functools.partial(check_order, token, entry, stoploss, st_date, end_date, trailStopLoss, bookProfit)
-         ).tag('order_check')
+        schedule.every(1).minutes.do(
+            functools.partial(check_order, token, entry, stoploss_dict, st_date, end_date, trailStopLoss, bookProfit)
+        ).tag('order_check')
         print("Scheduled order check")
     else:
         print("Order already placed")
+
 
 
 
@@ -169,10 +181,10 @@ def execute_strategy():
         yesterday = today - dt.timedelta(days=1)
 
     st_date = str(today) + " 09:30"
-    end_date = str(today) + " 22:30"
+    end_date = str(today) + " 23:30"
 
     candle_df = hist_data_CE(token_CE, "FIVE_MINUTE", st_date, end_date, instrument_list)
-    print(candle_df)
+    # print(candle_df)
     candle_pe_df = hist_data_CE(token_PE, "FIVE_MINUTE", st_date, end_date, instrument_list)
 
     ce_bb = 'buy'  # bollinger_band(candle_df)
@@ -181,15 +193,34 @@ def execute_strategy():
     pe_bb = 'notBuy'  # bollinger_band(candle_pe_df)
     pe_rsi = 60
 
+    schedule.clear('ce_job')
+
     if ce_bb == "buy" and ce_rsi > 50 and not orderPlaced:
-       print(strike_symbol_CE + " is a Buy")
-       if not orderPlaced:
-           for i in range(1, 5):
-               if not orderPlaced:
-                   schedule.every().minute.at(f":{5 * i:02d}").do(
-                       lambda: fetch_1_min_data_CE(token_CE, st_date, end_date, candle_df["high"].iloc[-2],
-                                                   candle_df["low"].iloc[-2])
-                   )
+        print(strike_symbol_CE + " is a Buy")
+
+        # Get the current time
+        current_time = datetime.now()
+        current_minute = current_time.minute
+
+        # Calculate the next 5-minute boundary
+        next_5min_boundary = current_minute + (5 - (current_minute % 5))
+
+        # Define the function to be executed
+        def schedule_until_next_block():
+            current_time_inner = datetime.now()
+            current_minute_inner = current_time_inner.minute
+
+            # Stop scheduling after the next 5-minute block
+            if (current_minute_inner >= current_minute +1) and (current_minute_inner % 5 == 0):
+                print(f"Reached next 5-minute boundary: {current_time_inner.strftime('%H:%M')}, stopping the job.")
+                schedule.clear('ce_job')
+            else:
+                # Call the fetch method
+                fetch_1_min_data_CE(token_CE, st_date, end_date, candle_df["high"].iloc[-2], candle_df["low"].iloc[-2])
+                print(f"Data fetched at {current_time_inner.strftime('%H:%M:%S')}")
+
+        # Schedule the task every minute at 5 seconds
+        schedule.every().minute.at(":05").do(lambda: schedule_until_next_block() if not orderPlaced else None).tag('ce_job')
     elif pe_bb == "buy" and pe_rsi > 50 and not orderPlaced:
         print(strike_symbol_PE + " is a Buy")
         for i in range(1, 5):
@@ -201,7 +232,9 @@ def execute_strategy():
 
 
 # Schedule the function to run every 5 minutes
-schedule.every(5).minutes.at(":00").do(lambda: execute_strategy() if not orderPlaced else None)
+for minute in range(0, 60, 5):
+    schedule.every().hour.at(f":{minute:02d}").do(lambda: execute_strategy() if not orderPlaced else None)
+
 
 while True:
     schedule.run_pending()
