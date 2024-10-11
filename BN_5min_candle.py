@@ -8,8 +8,7 @@ import datetime
 today = datetime.date.today()
 #today = datetime.date.today()
 #today = str(date.today())
-print(type(today))
-print(today)
+
 
 def BN_5min_candle():
     df = pd.read_csv('D:\\key\\mr_long_data\\BN_data\\BN_live_data_'+str(today)+'.csv', header=None)
