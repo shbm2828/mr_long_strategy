@@ -121,6 +121,7 @@ def execute_strategy():
     print(token_CE)
     print(token_PE)
 
+
     if today.weekday() == 0:
         yesterday = today - dt.timedelta(days=3)
     else:
@@ -133,17 +134,15 @@ def execute_strategy():
     end_date_1min = str(today) + " 15:30"
 
     candle_df_ce_5min = hist_data(token_CE, "FIVE_MINUTE", st_date_5min, end_date_5min, instrument_list)
-    #print(candle_df_ce_5min)
     candle_df_pe_5min = hist_data(token_PE, "FIVE_MINUTE", st_date_5min, end_date_5min, instrument_list)
 
     ce_temp_bb_df = bollinger_band(candle_df_ce_5min)
-    #ce_temp_rsi_df = calculate_BB_RSI.RSI(candle_df_ce_5min)
     pe_temp_bb_df = bollinger_band(candle_df_pe_5min)
-    #pe_temp_rsi_df = calculate_BB_RSI.RSI(candle_df_pe_5min)
+
     
     ce_bb = round(ce_temp_bb_df["UB"].iloc[-1], 2)
     pe_bb = round(pe_temp_bb_df["UB"].iloc[-1], 2)
-    #pe_rsi = round(pe_temp_rsi_df["rsi"].iloc[-1], 2)
+    
     print(ce_bb)
     print(pe_bb)
     

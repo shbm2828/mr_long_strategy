@@ -39,7 +39,7 @@ expiry=get_nearest_exp()
 # Get Strike Price to select options
 def get_strike_price():
     temp = pd.read_csv('D:\\key\\mr_long_data\\BN_data\\BN_hist_5min_candle_'+str(today)+'.csv')
-    temp.columns=['date', 'open', 'high', 'low', 'close']
+    temp.columns=['date', 'open', 'high', 'low', 'close', 'volume']
     price = int(temp.iloc[-2]["close"])
     remainder = price % 100
     if remainder <= 50:
@@ -102,7 +102,7 @@ def hist_data_CE(token_CE,interval,st_date,end_date,instrument_list,exchange="NF
     return df_data
         
   
-candle_df = hist_data_CE(token_CE,"FIVE_MINUTE",st_date, end_date, instrument_list)
+candle_data = hist_data_CE(token_CE,"FIVE_MINUTE",st_date, end_date, instrument_list)
 
 
 

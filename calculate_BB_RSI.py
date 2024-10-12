@@ -1,14 +1,14 @@
 import pandas as pd
 import numpy as np
-import tempo
 
-candle_df = tempo.candle_data   #get option candle data
+#get option candle data
 
 
 def bollinger_band(candle_df, n=20):
     candle_df["MB"] = candle_df["close"].rolling(n).mean()
     candle_df["UB"] = candle_df["MB"] + 2*candle_df["close"].rolling(n).std(ddof=0)
     candle_df["LB"] = candle_df["MB"] - 2*candle_df["close"].rolling(n).std(ddof=0)
+    return candle_df
 
 
 def EMA(candle_df, n=9):
@@ -32,8 +32,9 @@ def RSI(candle_df, n=14):
     candle_df["rs"] = candle_df["avg_gain"]/candle_df["avg_loss"]
     candle_df["rsi"] = 100 - (100/(1+candle_df["rs"]))
     candle_df.drop(["change", "gain", "loss", "avg_gain", "avg_loss", "rs"], axis=1, inplace=True)
+    return candle_df
 
-bollinger_band(candle_df)
-RSI(candle_df)
+#bollinger_band(candle_df)
+#RSI(candle_df)
 
-print(candle_df)
+#print(candle_df)
