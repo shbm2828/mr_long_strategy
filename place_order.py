@@ -16,55 +16,34 @@ print("Instrument list fetched")
 response = urllib.request.urlopen(instrument_url)
 instrument_list = json.loads(response.read())
 
-def token_lookup(strike_symbol_CE, instrument_list, exchange="NFO"):
-    for instrument in instrument_list:
-        if instrument["symbol"] == strike_symbol_CE :
-         return instrument["token"]
 
 
 
-def symbol_lookup(token_CE, instrument_list, exchange="NFO"):
-    for instrument in instrument_list:
-        if instrument["token"] == token_CE and instrument["exch_seg"] == exchange:
-            return(instrument["symbol"])
+strike_symbol_CE = "BANKNIFTY16OCT2451800CE"
+token_CE = 43745
 
-
-
-def place_limit_order(strike_symbol, token, buy_sell, price, quantity, instrument_list, exchange="NSE"):
-    
+def place_robo_order(strike_symbol_CE, token_CE, buy_sell, price, quantity, instrument_list, exchange='NFO'):
     params = {
-        "variety": "NORMAL",
-        "tradingsymbol": strike_symbol,
-        "symboltoken": token,
+        "variety": "ROBO",
+        "tradingsymbol": strike_symbol_CE,
+        "symboltoken": token_CE,
         "transactiontype": buy_sell,
-        "exchange": "NSE",
-        "ordertype": "LIMIT",
-        "producttype": "INTRADAY",
-        "duration": "DAY",
-        "price": price,
-        "quantity": quantity
-        }
-    order = obj.placeOrder(params)
-    print(order)
-    
-    
-    
-def place_robo_order(instrument_list, ticker, buy_sell, price, quantity, exchange='NSE'):
-    params = {
-        "varity": "ROBO",
-        "trdingsymbol": "{}-EQ".format(ticker),
-        "symboletoken": token_lookup(ticker, instrument_list),
         "exchange": exchange,
         "ordertype": "LIMIT",
-        "producttype": "ROBO",
+        "producttype": "BO",
         "duration": "DAY",
         "price": price,
-        "stoploss": price-30,
-        "squareoff": price+60,
+        "stoploss": 30,         #in point
+        "squareoff": 60,           #in point
+        "trailingstoploss": 10,         #in point
         "quantity": quantity        
-        #"trailingstoploss": value
         }
     response = obj.placeOrder(params)
     return response
 
-place_robo_order(instrument_list, 'HDFC', 'BUY', 400, 1)
+place_robo_order(strike_symbol_CE, token_CE, "BUY", 235, 15, instrument_list)
+
+
+
+
+
