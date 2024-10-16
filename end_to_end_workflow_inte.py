@@ -94,7 +94,7 @@ def fetch_1_min_data_and_place_order(strike_symbol, token, st_date_1min, end_dat
     candle_df_1min = hist_data(token, "ONE_MINUTE", st_date_1min, end_date_1min, instrument_list)
     close_price = candle_df_1min["close"].iloc[-2]
     if close_price > high:
-            order_res = place_robo_order(strike_symbol, token, "BUY", 235, 15, instrument_list)
+            order_res = place_robo_order(strike_symbol, token, "BUY", high, 15, instrument_list)
             global placed_order_id
             placed_order_id = order_res['data']['orderid']
 

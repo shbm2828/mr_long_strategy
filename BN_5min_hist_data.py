@@ -9,7 +9,7 @@ from pyotp import TOTP
 TOTP("").now()
 key_path = r"D:\key"
 os.chdir(key_path)
-key_secret = open("shbm_key.txt","r").read().split()
+key_secret = open("D:\key\\shbm_key.txt","r").read().split()
 obj = SmartConnect(api_key=key_secret[0])
 data = obj.generateSession(key_secret[2], key_secret[3], TOTP(key_secret[4]).now())
 
