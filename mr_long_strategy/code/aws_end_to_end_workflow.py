@@ -12,18 +12,21 @@ import time
 from datetime import datetime
 import  functools
 
-from aws_calculate_BB_RSI import RSI, bollinger_band
+from aws_calculate_BB_RSI import RSI, bollinger_band,symbol_lookup,get_nearest_expiry
 from aws_place_order import place_robo_order
 
-#from get_option_hist_data import strike_symbol
-
-#from calculate_BB_RSI import bollinger_band
-#from get_option_hist_data import hist_data_PE
 
 TOTP("").now()
-key_path = r"/home/ec2-user/mr_long_strategy/key"
+with open('../../config.json', 'r') as config_file:
+    config = json.load(config_file)
+
+key_path = config['key_path']
+key_secret_file = config['key_secret_file']
+instrument_url = config['instrument_url']
+output_file_path = config['output_file_path']
+
 os.chdir(key_path)
-key_secret = open("/home/ec2-user/mr_long_strategy/key/shbm_key.txt","r").read().split()
+key_secret = open(key_secret_file, "r").read().split()
 obj = SmartConnect(api_key=key_secret[0])
 data = obj.generateSession(key_secret[2], key_secret[3], TOTP(key_secret[4]).now())
 
@@ -42,6 +45,9 @@ else:
         json.dump(instrument_list, f)
     print("Instrument list fetched and cached")
 
+nearest_expiry =  get_nearest_expiry(config['symbol'], instrument_list)
+print(nearest_expiry)
+exchange, symbol,expiry = symbol_lookup(config['token'], instrument_list)
 today = dt.date.today()
 
 def get_nearest_exp():
@@ -53,20 +59,21 @@ def get_nearest_exp():
     next_wednesday = today + dt.timedelta(days=days_until_next_wednesday)
     nearest_exp = next_wednesday.strftime("%d%b%y")
     return nearest_exp
-expiry=get_nearest_exp()
+# expiry=get_nearest_exp()
 print("Expiry date:", expiry )
 
 # Get Strike Price to select options
 def get_strike_price():
-    temp = pd.read_csv('/home/ec2-user/mr_long_strategy/data/BN/aws_BN_hist_5min_candle_'+str(today)+'.csv')
-    temp.columns=['date', 'open', 'high', 'low', 'close', 'volume']
-    price = int(temp.iloc[-2]["close"])
+    #temp =pd.read_csv(output_file_path + str(today) + '.csv')
+    #temp.columns=['date', 'open', 'high', 'low', 'close', 'volume']
+    # exchange, symbol = symbol_lookup(config['token'], instrument_list)
+    price = obj.ltpData(exchange,symbol, config['token'])['data']['ltp']
     remainder = price % 100
     if remainder <= 50:
         strike = price - remainder
     else:
         strike = price + (100 - remainder)
-    return strike
+    return int(strike)
     
 def token_lookup(strike_symbol, instrument_list, exchange="NFO"):
     for instrument in instrument_list:
@@ -105,6 +112,8 @@ def check_open_order():
     response = obj.orderBook()   #response is a dict type
     order_book = pd.DataFrame(response["data"])
     #strike = [strike_symbol, strike_symbol]
+    if order_book.empty:
+        return False
     df = order_book[(order_book['status'] == 'trigger pending') & (order_book['parentorderid'] == placed_order_id) & (order_book['variety'] == 'ROBO')]
     if df.empty:
         return False  #currently no open order
@@ -113,17 +122,17 @@ def check_open_order():
 
 
 
-# Function to execute every 5 minutes
+
 def execute_strategy():
     if check_open_order() == False:
-        #global orderPlaced
+
         
         strike_price = get_strike_price()
         print("Strike Price: ", strike_price)
         
         
-        strike_symbol_CE = ('BANKNIFTY'+expiry+str(strike_price)+'CE').upper()
-        strike_symbol_PE = ('BANKNIFTY'+expiry+str(strike_price)+'PE').upper()
+        strike_symbol_CE = (config['symbol']+nearest_expiry+str(strike_price)+'CE').upper()
+        strike_symbol_PE = (config['symbol']+nearest_expiry+str(strike_price)+'PE').upper()
         
         print(strike_symbol_CE)
         print(strike_symbol_PE)
@@ -215,7 +224,7 @@ def execute_strategy():
         
         
         # Schedule the function to run every 5 minutes
-for minute in range(0, 60, 5):
+for minute in range(0, 60, 1):
     schedule.every().hour.at(f":{minute:02d}").do(lambda: execute_strategy())
 
 

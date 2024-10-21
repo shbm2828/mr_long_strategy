@@ -1,0 +1,8 @@
+{
+    "key_path": "D:\key",
+    "key_secret_file": "D:/key/shbm_key.txt",
+    "instrument_url": "https://margincalculator.angelbroking.com/OpenAPI_File/files/OpenAPIScripMaster.json",
+    "output_file_path": "D:/key/mr_long_data/BN_data",
+    "symbol": "BANKNIFTY",
+    "token": "99926009"
+}

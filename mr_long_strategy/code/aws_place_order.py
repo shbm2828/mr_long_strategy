@@ -20,11 +20,6 @@ def place_robo_order(strike_symbol_CE, token_CE, buy_sell, entry_price, low, qua
 
 
 
-
-#strike_symbol_CE = "BANKNIFTY16OCT2451500PE"
-#token_CE = 43709
-
-
 def place_robo_order_demo(strike_symbol_CE, token_CE, buy_sell, entry_price, quantity, instrument_list, exchange='NFO'):
     params = {
         "variety": "ROBO",
@@ -45,7 +40,6 @@ def place_robo_order_demo(strike_symbol_CE, token_CE, buy_sell, entry_price, qua
     return response
 #order_res = place_robo_order_demo(strike_symbol_CE, token_CE, "BUY", 135, 15, instrument_list)
 
-#placed_order_id = order_res['data']['orderid']
 
 
 
