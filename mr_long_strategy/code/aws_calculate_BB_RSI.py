@@ -70,9 +70,9 @@ def get_nearest_expiry(symbol, instrument_list):
     nearest_expiry = min(expiry_dates)
 
     # Format the nearest expiry date back to the original format
-    formatted_expiry = nearest_expiry.strftime("%d%b%Y")
+    formatted_expiry = nearest_expiry.strftime("%d%b%y")
 
-    return formatted_expiry
+    return formatted_expiry.upper()
 
 #bollinger_band(candle_df)
 #RSI(candle_df)

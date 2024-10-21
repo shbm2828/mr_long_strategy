@@ -135,8 +135,8 @@ def execute_strategy():
         print("Strike Price: ", strike_price)
         
         
-        strike_symbol_CE = (config['symbol']+expiry+str(strike_price)+'CE').upper()
-        strike_symbol_PE = (config['symbol']+expiry+str(strike_price)+'PE').upper()
+        strike_symbol_CE = (config['symbol']+nearest_expiry+str(strike_price)+'CE').upper()
+        strike_symbol_PE = (config['symbol']+nearest_expiry+str(strike_price)+'PE').upper()
         
         print(strike_symbol_CE)
         print(strike_symbol_PE)
