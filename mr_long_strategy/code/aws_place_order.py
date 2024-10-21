@@ -15,7 +15,7 @@ def place_robo_order(strike_symbol_CE, token_CE, buy_sell, entry_price, low, qua
         "trailingstoploss": entry_price - low,         #in point
         "quantity": quantity        
         }
-    response = obj.placeOrder(params)
+    response = "orderPLaced" # obj.placeOrder(params)
     return response
 
 

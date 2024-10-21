@@ -34,6 +34,46 @@ def RSI(candle_df, n=14):
     candle_df.drop(["change", "gain", "loss", "avg_gain", "avg_loss", "rs"], axis=1, inplace=True)
     return candle_df
 
+def symbol_lookup(token, instrument_list):
+    for instrument in instrument_list:
+        if instrument["token"] == token:
+            exch_seg = instrument["exch_seg"]
+            symbol = instrument["symbol"]
+            expiry = instrument["expiry"]
+            # Format expiry date to 19NOV24
+            formatted_expiry = expiry[:-4] + expiry[-2:]
+            return exch_seg, symbol, formatted_expiry
+
+from datetime import datetime
+
+
+def get_nearest_expiry(symbol, instrument_list):
+    today = datetime.now()
+
+    # Filter instruments by symbol
+    matching_instruments = [instrument for instrument in instrument_list if instrument["name"] == symbol]
+
+    if not matching_instruments:
+        raise ValueError(f"No instruments found for symbol: {symbol}")
+
+    # Extract expiry dates and convert them to datetime objects, ignoring empty expiry fields and past dates
+    expiry_dates = [
+        datetime.strptime(instrument["expiry"], "%d%b%Y")
+        for instrument in matching_instruments
+        if instrument["expiry"] and datetime.strptime(instrument["expiry"], "%d%b%Y") > today
+    ]
+
+    if not expiry_dates:
+        raise ValueError(f"No valid future expiry dates found for symbol: {symbol}")
+
+    # Find the nearest expiry date
+    nearest_expiry = min(expiry_dates)
+
+    # Format the nearest expiry date back to the original format
+    formatted_expiry = nearest_expiry.strftime("%d%b%Y")
+
+    return formatted_expiry
+
 #bollinger_band(candle_df)
 #RSI(candle_df)
 
