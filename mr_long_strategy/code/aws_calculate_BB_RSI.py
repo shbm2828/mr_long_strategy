@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-
+import ta
 
 
 def bollinger_band(candle_df, n=20):
@@ -10,6 +10,18 @@ def bollinger_band(candle_df, n=20):
     return candle_df
 
 
+
+
+
+
+def rsi_2(candle_df):
+    rsi_period=14
+    candle_df['rsi_2'] = ta.momentum.RSIIndicator(candle_df['close'], rsi_period).rsi()
+    return candle_df
+
+
+
+"""
 def EMA(candle_df, n=9):
     multiplier = 2/(n+1)    
     sma = candle_df.rolling(n).mean()
@@ -31,7 +43,9 @@ def RSI(candle_df, n=14):
     candle_df["rs"] = candle_df["avg_gain"]/candle_df["avg_loss"]
     candle_df["rsi"] = 100 - (100/(1+candle_df["rs"]))
     candle_df.drop(["change", "gain", "loss", "avg_gain", "avg_loss", "rs"], axis=1, inplace=True)
-    return candle_df
+    return candle_df 
+
+"""
 
 def symbol_lookup(token, instrument_list):
     for instrument in instrument_list:
