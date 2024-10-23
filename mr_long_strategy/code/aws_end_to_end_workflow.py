@@ -109,13 +109,15 @@ def fetch_1_min_data_and_place_order(strike_symbol, token, st_date_1min, end_dat
     close_price = candle_df_1min["close"].iloc[-2]
     if close_price > high:
             #lot = lot_number(strike_symbol,token)
-            order_res = place_robo_order(strike_symbol, token, "BUY", entry_price, low, lot*25, instrument_list)
+            order_res = place_robo_order(strike_symbol, token, "BUY", entry_price, low, lot*25, instrument_list, exchange='NFO')
+            print(order_res)
             print("order placed at price: ", entry_price)
             print("sl point is: ", entry_price - low)
             print("target point is: ", entry_price + 2*(entry_price - low))
                        
             global placed_order_id
             placed_order_id = order_res['data']['orderid']
+            print(placed_order_id)
     else:
         print("1min candle does not close above high of 5min candle")
         
