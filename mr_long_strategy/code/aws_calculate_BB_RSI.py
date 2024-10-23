@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-
+import ta
 #get option candle data
 
 
@@ -32,6 +32,11 @@ def RSI(candle_df, n=14):
     candle_df["rs"] = candle_df["avg_gain"]/candle_df["avg_loss"]
     candle_df["rsi"] = 100 - (100/(1+candle_df["rs"]))
     candle_df.drop(["change", "gain", "loss", "avg_gain", "avg_loss", "rs"], axis=1, inplace=True)
+    return candle_df
+
+def rsi_2(candle_df):
+    rsi_period=14
+    candle_df['rsi_2'] = ta.momentum.RSIIndicator(candle_df['close'], rsi_period).rsi()
     return candle_df
 
 def symbol_lookup(token, instrument_list):
