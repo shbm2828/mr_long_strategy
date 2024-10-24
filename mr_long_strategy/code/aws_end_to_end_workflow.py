@@ -25,6 +25,10 @@ file_handler = logging.FileHandler('aws_end_to_end_workflow.log')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
+# Cache variables
+cached_last_traded_day = None
+cached_date = None
+
 try:
     TOTP("").now()
     # Get the directory of the current script
@@ -109,7 +113,7 @@ try:
             logger.error("Error in token_lookup: %s", e)
             return None
 
-    def hist_data(token, interval, st_date, end_date, instrument_list, exchange="NFO"):
+    def hist_data(token, interval, st_date, end_date, instrument_list, exchange=config['exchange']):
         try:
             params = {
                 "exchange": exchange,
@@ -160,6 +164,46 @@ try:
             logger.error("Error checking open order: %s", e)
             return False
 
+
+    def get_last_traded_day():
+        global cached_last_traded_day, cached_date
+        today = datetime.now().date()
+
+        # Check if the cached result is from today
+        if cached_date == today:
+            return cached_last_traded_day
+
+        try:
+            # Define the date range for fetching historical data
+            end_date = datetime.now().strftime("%Y-%m-%d %H:%M")
+            start_date = (datetime.now() - pd.DateOffset(days=5)).strftime("%Y-%m-%d %H:%M")
+
+            # Fetch historical data
+            hist_data = obj.getCandleData({
+                "exchange": config['indexExchange'],
+                "symboltoken": config['token'],
+                "interval": "ONE_DAY",
+                "fromdate": start_date,
+                "todate": end_date
+            })
+
+            # Convert the data to a DataFrame
+            df_data = pd.DataFrame(hist_data["data"], columns=["date", "open", "high", "low", "close", "volume"])
+            df_data["date"] = pd.to_datetime(df_data["date"])
+
+            # Get the last traded day
+            last_traded_day = df_data["date"].max() - dt.timedelta(days=1)
+
+            # Update the cache
+            cached_last_traded_day = last_traded_day
+            cached_date = today
+
+            return last_traded_day
+        except Exception as e:
+            logger.error("Error in get_last_traded_day: %s", e)
+            return None
+
+
     def execute_strategy():
         try:
             logger.info(check_demo_open_order())
@@ -182,10 +226,9 @@ try:
                 logger.info("Token CE: %s", token_CE)
                 logger.info("Token PE: %s", token_PE)
 
-                if today.weekday() == 0:
-                    yesterday = today - dt.timedelta(days=3)
-                else:
-                    yesterday = today - dt.timedelta(days=1)
+                last_traded_day = get_last_traded_day()
+                yesterday = last_traded_day.strftime("%Y-%m-%d")
+                logger.info("Yesterday: %s", yesterday)
 
                 st_date_5min = str(yesterday) + " 13:30"
                 end_date_5min = str(today) + " 23:30"
@@ -194,7 +237,9 @@ try:
                 end_date_1min = str(today) + " 23:30"
 
                 candle_df_ce_5min = hist_data(token_CE, "FIVE_MINUTE", st_date_5min, end_date_5min, instrument_list)
+                logger.info("{} CE value is: {}".format(strike_symbol_CE, candle_df_ce_5min["close"].iloc[-2]))
                 candle_df_pe_5min = hist_data(token_PE, "FIVE_MINUTE", st_date_5min, end_date_5min, instrument_list)
+                logger.info("{} PE value is: {}".format(strike_symbol_PE, candle_df_pe_5min["close"].iloc[-2]))
 
                 ce_temp_bb_df = bollinger_band(candle_df_ce_5min)
                 pe_temp_bb_df = bollinger_band(candle_df_pe_5min)
@@ -216,7 +261,7 @@ try:
                 schedule.clear('ce_job')
                 schedule.clear('pe_job')
 
-                if candle_df_ce_5min["close"].iloc[-2] > ce_bb or ce_rsi > 60:
+                if candle_df_ce_5min["close"].iloc[-2] > ce_bb and ce_rsi > 60:
                     logger.info("5min CE candle closed above BB and RSI > 60")
                     current_time = datetime.now()
                     current_minute = current_time.minute

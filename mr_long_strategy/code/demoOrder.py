@@ -17,15 +17,14 @@ orderPlaced = False
 def place_order(token, entry, stoploss, st_date, end_date):
     global orderPlaced
     try:
-        from aws_end_to_end_workflow import hist_data as hist_data_CE, instrument_list as  instrument_list  # Adjust the import as needed
-
-        trailStopLoss = entry + (entry - stoploss)
-        logger.info("Trail stop loss: %s", trailStopLoss)
-        bookProfit = entry + 2 * (entry - stoploss)
-        logger.info("Book profit: %s", bookProfit)
-        orderPrice = entry
+        from aws_end_to_end_workflow import hist_data as hist_data, instrument_list as  instrument_list  # Adjust the import as needed
         if not orderPlaced:
             logger.info("Order placed")
+            trailStopLoss = entry + (entry - stoploss)
+            logger.info("Trail stop loss: %s", trailStopLoss)
+            bookProfit = entry + 2 * (entry - stoploss)
+            logger.info("Book profit: %s", bookProfit)
+            orderPrice = entry
             orderPlaced = True
 
             stoploss_dict = {"value": stoploss}  # Use a dictionary to store stoploss
@@ -33,8 +32,11 @@ def place_order(token, entry, stoploss, st_date, end_date):
             def check_order(token, entry, stoploss_dict, st_date, end_date, trailStopLoss, bookProfit):
                 global orderPlaced
                 try:
-                    candle_df = hist_data_CE(token, "ONE_MINUTE", st_date, end_date, instrument_list)
-                    current_price = candle_df["close"].iloc[-1]
+                    candle_df = hist_data(token, "ONE_MINUTE", st_date, end_date, instrument_list)
+                    if candle_df.empty or len(candle_df) < 2:
+                        logger.error("Candle DataFrame is empty or does not have enough rows")
+                        return
+                    current_price = candle_df["close"].iloc[-2]  #possible bug here I think it should be -2
                     logger.info(f"Current price: {current_price}, token: {token}, entry: {entry}, stoploss: {stoploss_dict['value']}, st_date: {st_date}, end_date: {end_date}, trailStopLoss: {trailStopLoss}, bookProfit: {bookProfit}")
                     if current_price <= stoploss_dict["value"]:
                         logger.info("Stoploss hit")

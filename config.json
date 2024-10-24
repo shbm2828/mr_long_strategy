@@ -3,6 +3,8 @@
     "key_secret_file": "C:/Users/HP/Desktop/mr_long_strategy/key.txt",
     "instrument_url": "https://margincalculator.angelbroking.com/OpenAPI_File/files/OpenAPIScripMaster.json",
     "output_file_path": "C:/Users/HP/Desktop/mr_long_strategy/mr_long_data/BN_data",
-    "symbol": "BANKNIFTY",
-    "token": "99926009"
+    "symbol": "NIFTY",
+    "token": "99926000",
+    "exchange": "NFO",
+    "indexExchange": "NSE"
 }
