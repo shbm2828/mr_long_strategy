@@ -3,7 +3,12 @@ import schedule
 import logging
 import os
 import json
+import pandas as pd
 from datetime import datetime
+from SmartApi import SmartConnect
+from pyotp import TOTP
+
+
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -27,7 +32,13 @@ key_secret_file = config['key_secret_file']
 instrument_url = config['instrument_url']
 output_file_path = config['output_file_path']
 
-
+os.chdir(key_path)
+TOTP("").now()
+key_secret = open(key_secret_file, "r").read().split()
+obj = SmartConnect(api_key=key_secret[0])
+data = obj.generateSession(key_secret[2], key_secret[3], TOTP(key_secret[4]).now())
+    
+    
 orderPlaced = False
 
 global lot_numbe
@@ -85,7 +96,7 @@ def place_angle_robo_order(strike_symbol, token, buy_sell, entry_price, low, qua
 
 def fetch_1_min_data_CE(strike_symbol_CE, token_CE, st_date, end_date, high, low):
     try:
-        from aws_end_to_end_workflow import hist_data as hist_data_CE, instrument_list as instrument_list
+        from mr_long_strategy.code.aws_end_to_end_workflow import hist_data as hist_data_CE, instrument_list as instrument_list
 
         logger.info(
             f"Params - token_CE: {token_CE}, st_date: {st_date}, end_date: {end_date}, high: {high}, low: {low}, current_minute: {datetime.now().minute}")
@@ -109,7 +120,7 @@ def fetch_1_min_data_CE(strike_symbol_CE, token_CE, st_date, end_date, high, low
 
 def fetch_1_min_data_PE(strike_symbol_PE, token_PE, st_date, end_date, high, low):
     try:
-        from aws_end_to_end_workflow import hist_data as hist_data_PE, instrument_list as instrument_list
+        from mr_long_strategy.code.aws_end_to_end_workflow import hist_data as hist_data_PE, instrument_list as instrument_list
 
         logger.info(
             f"Params - token_PE: {token_PE}, st_date: {st_date}, end_date: {end_date}, high: {high}, low: {low}, current_minute: {datetime.now().minute}")
