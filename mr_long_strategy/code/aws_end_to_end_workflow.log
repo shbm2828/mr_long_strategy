@@ -1,0 +1,20 @@
+2024-10-25 02:04:00,599:__main__:INFO:Instrument list loaded from cache
+2024-10-25 02:04:00,654:__main__:INFO:Nearest expiry: 31OCT24
+2024-10-25 02:05:00,136:__main__:INFO:False
+2024-10-25 02:05:00,984:__main__:INFO:Strike price: 24400
+2024-10-25 02:05:00,984:__main__:INFO:Strike symbol CE: NIFTY31OCT2424400CE
+2024-10-25 02:05:00,984:__main__:INFO:Strike symbol PE: NIFTY31OCT2424400PE
+2024-10-25 02:05:00,996:__main__:INFO:Token CE: 49018
+2024-10-25 02:05:00,996:__main__:INFO:Token PE: 54751
+2024-10-25 02:05:02,032:__main__:INFO:Yesterday: 2024-10-23
+2024-10-25 02:05:02,893:__main__:INFO:NIFTY31OCT2424400CE CE value is: 189.0
+2024-10-25 02:05:03,937:__main__:INFO:NIFTY31OCT2424400PE PE value is: 135.15
+2024-10-25 02:05:03,954:__main__:INFO:CE BB value: 188
+2024-10-25 02:05:03,954:__main__:INFO:PE BB value: 152
+2024-10-25 02:05:03,971:__main__:INFO:CE RSI value: 63
+2024-10-25 02:05:03,971:__main__:INFO:PE RSI value: 41
+2024-10-25 02:05:03,972:__main__:INFO:5min CE candle closed above BB and RSI > 60
+2024-10-25 02:05:05,986:__main__:INFO:Current time: 2024-10-25 02:05:05.986056
+2024-10-25 02:05:05,987:__main__:INFO:Current minute: 5
+2024-10-25 02:06:05,452:__main__:INFO:Current time: 2024-10-25 02:06:05.452580
+2024-10-25 02:06:05,452:__main__:INFO:Current minute: 6

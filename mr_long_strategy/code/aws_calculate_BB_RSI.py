@@ -11,7 +11,7 @@ def bollinger_band(candle_df, n=20):
     return candle_df
 
 
-def EMA(candle_df, n=9):
+""" def EMA(candle_df, n=9):
     multiplier = 2/(n+1)    
     sma = candle_df.rolling(n).mean()
     ema = np.full(len(candle_df), np.nan)
@@ -32,7 +32,7 @@ def RSI(candle_df, n=14):
     candle_df["rs"] = candle_df["avg_gain"]/candle_df["avg_loss"]
     candle_df["rsi"] = 100 - (100/(1+candle_df["rs"]))
     candle_df.drop(["change", "gain", "loss", "avg_gain", "avg_loss", "rs"], axis=1, inplace=True)
-    return candle_df
+    return candle_df """
 
 def rsi_2(candle_df):
     rsi_period=14

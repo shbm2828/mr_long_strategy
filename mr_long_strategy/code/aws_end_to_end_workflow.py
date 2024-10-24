@@ -10,12 +10,12 @@ import schedule
 import time
 from datetime import datetime
 import functools
-from aws_calculate_BB_RSI import RSI, bollinger_band, symbol_lookup, get_nearest_expiry
-from aws_place_order import place_robo_order
-from demoOrder import fetch_1_min_data_CE, fetch_1_min_data_PE, check_demo_open_order
+from aws_calculate_BB_RSI import bollinger_band, symbol_lookup, get_nearest_expiry
+from aws_place_order import fetch_1_min_data_CE, fetch_1_min_data_PE, check_open_order
+#from demoOrder import fetch_1_min_data_CE, fetch_1_min_data_PE, check_demo_open_order
 import logging
 
-from mr_long_strategy.code.aws_calculate_BB_RSI import rsi_2
+from aws_calculate_BB_RSI import rsi_2
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -32,18 +32,19 @@ cached_date = None
 try:
     TOTP("").now()
     # Get the directory of the current script
-    script_dir = os.path.dirname(__file__)
-
+    script_dir = os.path.dirname("C:\git\mr_long_strategy\mr_long_strategy\code")
+    
     # Construct the path to config.json relative to the script directory
-    config_path = os.path.join(script_dir, '..', '..', 'config.json')
-
+    config_path = os.path.join(script_dir, 'config.json')
+    
     with open(config_path, 'r') as config_file:
         config = json.load(config_file)
-
+    
     key_path = config['key_path']
     key_secret_file = config['key_secret_file']
     instrument_url = config['instrument_url']
     output_file_path = config['output_file_path']
+
 
     os.chdir(key_path)
     key_secret = open(key_secret_file, "r").read().split()
@@ -133,36 +134,24 @@ try:
             logger.error("Error fetching historical data: %s", e)
             return pd.DataFrame()
 
-    def fetch_1_min_data_and_place_order(strike_symbol, token, st_date_1min, end_date_1min, high, low):
+
+
+    def fetch_1_min_data_and_place_order(strike_symbol, token, st_date_1min, end_date_1min, high, low, entry_price, lot):
         try:
             candle_df_1min = hist_data(token, "ONE_MINUTE", st_date_1min, end_date_1min, instrument_list)
             logger.debug("1min candle data: %s", candle_df_1min)
             close_price = candle_df_1min["close"].iloc[-2]
             logger.info("Close price: %d", close_price)
             if close_price > high:
-                logger.info("Close price is greater than high")
-                order_res = place_robo_order(strike_symbol, token, "BUY", high, 15, instrument_list)
+                logger.info("1min candle Close price is greater than high")
+                
+                order_res = place_angle_robo_order(strike_symbol, token, "BUY", entry_price, low, lot*25, instrument_list, exchange='NFO')
+                logger.info(order_res)
                 global placed_order_id
                 placed_order_id = order_res['data']['orderid']
         except Exception as e:
             logger.error("Error in fetch_1_min_data_and_place_order: %s", e)
 
-    def check_open_order():
-        global placed_order_id
-        try:
-            response = obj.orderBook()
-            logger.debug("Order book: %s", response)
-            order_book = pd.DataFrame(response["data"])
-            if order_book.empty:
-                return False
-            df = order_book[(order_book['status'] == 'trigger pending') & (order_book['parentorderid'] == placed_order_id) & (order_book['variety'] == 'ROBO')]
-            if df.empty:
-                return False
-            else:
-                return True
-        except Exception as e:
-            logger.error("Error checking open order: %s", e)
-            return False
 
 
     def get_last_traded_day():
@@ -206,8 +195,8 @@ try:
 
     def execute_strategy():
         try:
-            logger.info(check_demo_open_order())
-            if check_demo_open_order() == False:
+            logger.info(check_open_order())
+            if check_open_order() == False:
                 strike_price = get_strike_price_nifty()
                 if strike_price is None:
                     return
@@ -275,7 +264,7 @@ try:
                         if (current_minute_inner >= current_minute + 1) and (current_minute_inner % 5 == 0):
                             schedule.clear('ce_job')
                         else:
-                            fetch_1_min_data_CE(token_CE, st_date_1min, end_date_1min, candle_df_ce_5min["high"].iloc[-2], candle_df_ce_5min["low"].iloc[-2])
+                            fetch_1_min_data_CE(strike_symbol_CE, token_CE, st_date_1min, end_date_1min, candle_df_ce_5min["high"].iloc[-2], candle_df_ce_5min["low"].iloc[-2])
                     schedule.every().minute.at(":05").do(lambda: schedule_ce_1_min()).tag('ce_job')
                 elif candle_df_pe_5min["close"].iloc[-2] > pe_bb and pe_rsi > 60:
                     logger.info("5min PE candle closed above BB and RSI > 60")
@@ -291,7 +280,7 @@ try:
                         if (current_minute_inner >= current_minute + 1) and (current_minute_inner % 5 == 0):
                             schedule.clear('pe_job')
                         else:
-                            fetch_1_min_data_PE(token_PE, st_date_1min, end_date_1min, candle_df_pe_5min["high"].iloc[-2], candle_df_pe_5min["low"].iloc[-2])
+                            fetch_1_min_data_PE(strike_symbol_PE, token_PE, st_date_1min, end_date_1min, candle_df_pe_5min["high"].iloc[-2], candle_df_pe_5min["low"].iloc[-2])
                     schedule.every().minute.at(":05").do(lambda: schedule_pe_1_min()).tag('pe_job')
                 else:
                     logger.info("No trade signal")

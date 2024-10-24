@@ -1,0 +1,11 @@
+{
+    "key_path": "C:/git/mr_long_strategy/mr_long_strategy",
+    "key_secret_file": "D:/key/shbm_key.txt",
+    "instrument_url": "https://margincalculator.angelbroking.com/OpenAPI_File/files/OpenAPIScripMaster.json",
+    "output_file_path": "C:/git/mr_long_strategy/mr_long_strategy/data/BN",
+    "symbol": "NIFTY",
+    "token": "99926000",
+    "exchange": "NFO",
+    "indexExchange": "NSE",
+    "capital_in": "20000"
+}
